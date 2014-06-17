@@ -30,19 +30,24 @@
 using namespace ns3;
 
 int main (int argc, char *argv[])
-{	
+{
 	//Clear the file where the association RNTI-IMSI is managed
-
-	std::remove("RNTI_IMSI_MAP.txt");
-
+	std::remove("numberOfNodes.txt");
+	std::remove("RNTI_IMSI_MAP_2.txt");
+	std::remove("SchedulerLOG.txt");
 
 	int numberOfNodes=10;
-	double simTime=3;
+	double simTime=10;
 	bool fading=true;
 	int RBs=25;
 	int earfcn1=500;
-	double min_SNR_dB=10.0;
+	double min_SNR_dB=5.0;
 	double mean_SNR_dB=15.0;
+
+	std::ofstream myfile;
+	myfile.open ("numberOfNodes.txt");
+	myfile << numberOfNodes;
+	myfile.close();
 
 	//LogComponentEnable ("TdMtFfMacScheduler", LOG_LEVEL_ALL);
 	//LogComponentEnable ("LteEnbMac", LOG_LEVEL_ALL);
@@ -68,13 +73,15 @@ int main (int argc, char *argv[])
 	lteHelper->SetEnbDeviceAttribute("UlEarfcn",UintegerValue(earfcn1+18000));
 
 	lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
+	//lteHelper->SetAttribute ("PropagationlossModel", StringValue ("ns3::NakagamiPropagationLossModel"));
+
 
 	if (fading)
 	{
 		lteHelper->SetFadingModel("ns3::TraceFadingLossModel");
-		lteHelper->SetFadingModelAttribute ("TraceFilename", StringValue ("src/lte/model/fading-traces/FadingTrace.fad"));
-		lteHelper->SetFadingModelAttribute ("TraceLength", TimeValue (Seconds (30.0)));
-		lteHelper->SetFadingModelAttribute ("SamplesNum", UintegerValue (30000));
+		lteHelper->SetFadingModelAttribute ("TraceFilename", StringValue ("src/lte/model/fading-traces/rayleigh_fading_EVA_60kmph.fad"));
+		lteHelper->SetFadingModelAttribute ("TraceLength", TimeValue (Seconds (10.0)));
+		lteHelper->SetFadingModelAttribute ("SamplesNum", UintegerValue (10000));
 		lteHelper->SetFadingModelAttribute ("WindowSize", TimeValue (Seconds (0.5)));
 		lteHelper->SetFadingModelAttribute ("RbNum", UintegerValue (25));
 	}
@@ -99,13 +106,19 @@ int main (int argc, char *argv[])
 
 	double delta=range/(numberOfNodes-1);
 
+	//double max_SNR=range+min_SNR;
+
 
 
 	Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
 
 	for (int i=0;i<numberOfNodes;i++)
 	{
-		double SNR_i=i*delta+min_SNR;
+		//double SNR_i=max_SNR-i*delta;
+
+		double SNR_i=min_SNR+i*delta;
+
+		std::cout<<SNR_i<<std::endl;
 		double SNR_i_dB=10*log10(SNR_i);
 
 		double K=26.33;	//This is the constant I need to compute the SNR for user

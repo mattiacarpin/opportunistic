@@ -275,8 +275,10 @@ private:
   //Mattia Carpin Scheduler
   bool mapFull;
   std::map <int, int> RNTI_IMSI_Map;
-  bool refreshMap();
-  double getAlphaValue(int IMSI);
+  bool refreshMap(int time);
+  int numberOfNodes;
+  int getIMSI(int RNTI);
+  std::vector<double> alphas;
 };
 
 } // namespace ns3

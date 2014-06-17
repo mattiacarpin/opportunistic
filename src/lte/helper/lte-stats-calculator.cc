@@ -241,6 +241,15 @@ LteStatsCalculator::FindImsiFromEnbMac (std::string path, uint16_t rnti)
   p += "/LteEnbRrc/UeMap/" + oss.str ();
   uint64_t imsi = FindImsiFromEnbRlcPath (p);
   NS_LOG_LOGIC ("FindImsiFromEnbMac: " << path << ", " << rnti << ", " << imsi);
+
+  if (imsi!=0)
+  {
+	  std::ofstream myfile;
+	  myfile.open ("RNTI_IMSI_MAP_2.txt",std::ios::app);
+	  myfile << rnti<<"\t"<<imsi<<"\n";
+	  myfile.close();
+  }
+
   return imsi;
 }
 
@@ -304,13 +313,13 @@ LteStatsCalculator::FindImsiForUe (std::string path, uint16_t rnti)
       NS_LOG_LOGIC ("FindImsiForUe[Rx]: " << path << ", " << rnti << ", " << imsi);
     }
 
-  if (imsi!=0)
+  /*if (imsi!=0)
   {
 	  std::ofstream myfile;
 	  myfile.open ("RNTI_IMSI_MAP.txt",std::ios::app);
 	  myfile << rnti<<"\t"<<imsi<<"\n";
 	  myfile.close();
-  }
+  }*/
   return imsi;
 }
 
