@@ -220,7 +220,7 @@ TdMtFfMacScheduler::TdMtFfMacScheduler() :
 	}
 
 	//Acquire the values of alpha, as from the file!
-	alphas.resize(numberOfNodes);
+	alphas.resize(numberOfNodes-1);
 
 	std::ifstream fileAlphas ("alphas.txt");
 	int i=0;
@@ -231,11 +231,13 @@ TdMtFfMacScheduler::TdMtFfMacScheduler() :
 			std::istringstream iss(line);
 			double alphaValue;
 			iss >> alphaValue;
-			alphas[i++]=alphaValue;
+			alphas[i]=alphaValue;i++;
 		}
 		fileAlphas.close();
 	}
 
+	//for(int j=0;j<numberOfNodes;j++)
+		//std::cout<<"Alpha("<<j<<")="<<alphas[j]<<std::endl;
 }
 
 TdMtFfMacScheduler::~TdMtFfMacScheduler() {
@@ -873,6 +875,9 @@ void TdMtFfMacScheduler::DoSchedDlTriggerReq(
 	m_dlInfoListBuffered.clear();
 	m_dlInfoListBuffered = dlInfoListUntxed;
 
+	double metrics[numberOfNodes];
+	for (int j=0;j<numberOfNodes;j++)
+		metrics[j]=0;
 
 	std::set<uint16_t>::iterator it;		//Questo scorre sui flussi di tutti gli utenti attivi!
 	std::set<uint16_t>::iterator itMax = m_flowStatsDl.end();
@@ -915,6 +920,8 @@ void TdMtFfMacScheduler::DoSchedDlTriggerReq(
 			{
 				// this UE has data to transmit
 				double achievableRate = 0.0;
+				int currentRNTI=(*it);
+
 				for (uint8_t k = 0; k < nLayer; k++)
 				{
 					uint8_t mcs = 0;
@@ -925,8 +932,42 @@ void TdMtFfMacScheduler::DoSchedDlTriggerReq(
 					NS_LOG_DEBUG (this << " RNTI " << (*it) << " MCS " << (uint32_t)mcs << " achievableRate " << achievableRate );
 				}
 
+				//Now I have found the achievable rate for user with RNTI=currentRNTI;
+
+				int currentIMSI=0;
+				switch (currentRNTI)
+				{
+					case (3):currentIMSI=1;break;
+					case (2):currentIMSI=2;break;
+					case (1):currentIMSI=3;break;
+				}
+
+
+				double alpha=0;
+
+				switch (currentIMSI)
+				{
+					case (1):alpha=2.6839;break;
+					case (2):alpha=8.9815;break;
+					case (3):alpha=10.9237;break;
+				}
+
+
+				double metric = achievableRate/alpha;
+				metrics[currentIMSI-1]=metric;
+
+
+				//std::cout<<(0xF & params.m_sfnSf)<<"-For user IMSI="<<currentIMSI<<" the metric is "<<(double)(metric)<<std::endl;
+
+				if (metric > metricMax)
+				{
+					metricMax = metric;
+					itMax = it;
+					winnerRNTI=(*it);
+				}
+
 				//TODO
-				double alpha=1;
+				/*double alpha=1;
 				if(mapFull)
 				{
 					//We should get the association between RNTI-IMSI going through the map!
@@ -939,7 +980,7 @@ void TdMtFfMacScheduler::DoSchedDlTriggerReq(
 					}
 					else
 					{
-						alpha=alphas[numberOfNodes-IMSI];
+						alpha=alphas[IMSI-1];
 					}
 				}
 				else
@@ -947,13 +988,10 @@ void TdMtFfMacScheduler::DoSchedDlTriggerReq(
 					mapFull=refreshMap(params.m_sfnSf >> 4);
 					alpha=1;	//Keep going with MT approach!
 				}
-				double metric = achievableRate/alpha;
-				if (metric > metricMax)
-				{
-					metricMax = metric;
-					itMax = it;
-					winnerRNTI=(*it);
-				}
+
+				int currentIMSI=getIMSI(*it);
+				metrics[currentIMSI-1]=metric;
+				*/
 			} // LcActivePerFlow
 
 		} // cqi
@@ -961,12 +999,24 @@ void TdMtFfMacScheduler::DoSchedDlTriggerReq(
 	} // end for m_flowStatsDl
 
 
+
 	std::ofstream myfile;
-	double timeMS=(params.m_sfnSf >> 4)*10+(0xF & params.m_sfnSf);
-	double time=(timeMS/1000);
+	double time=params.m_sfnSf;
 	myfile.open ("SchedulerLOG.txt",std::ios::app);
-	myfile <<time<<'\t'<<getIMSI(winnerRNTI)<<std::endl ;
+	switch(winnerRNTI)
+	{case 1:myfile <<time<<'\t'<<3<<std::endl ;break;
+	 case 2:myfile <<time<<'\t'<<2<<std::endl ;break;
+	 case 3:myfile <<time<<'\t'<<1<<std::endl ;break;
+	}
 	myfile.close();
+
+	std::ofstream secondFile;
+	secondFile.open ("Metric.txt",std::ios::app);
+	secondFile<<time<<'\t';
+	for (int i=0;i<numberOfNodes;i++)
+		secondFile<<metrics[i]<<'\t';
+	secondFile<<std::endl;
+	secondFile.close();
 
 	//std::cout<<"Winner RNTI is "<<winnerRNTI<<std::endl;
 

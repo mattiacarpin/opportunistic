@@ -37,7 +37,7 @@ int main (int argc, char *argv[])
 	std::remove("SchedulerLOG.txt");
 
 	int numberOfNodes=10;
-	double simTime=10;
+	double simTime=60;
 	bool fading=true;
 	int RBs=25;
 	int earfcn1=500;
@@ -73,15 +73,13 @@ int main (int argc, char *argv[])
 	lteHelper->SetEnbDeviceAttribute("UlEarfcn",UintegerValue(earfcn1+18000));
 
 	lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
-	//lteHelper->SetAttribute ("PropagationlossModel", StringValue ("ns3::NakagamiPropagationLossModel"));
-
 
 	if (fading)
 	{
 		lteHelper->SetFadingModel("ns3::TraceFadingLossModel");
-		lteHelper->SetFadingModelAttribute ("TraceFilename", StringValue ("src/lte/model/fading-traces/rayleigh_fading_EVA_60kmph.fad"));
-		lteHelper->SetFadingModelAttribute ("TraceLength", TimeValue (Seconds (10.0)));
-		lteHelper->SetFadingModelAttribute ("SamplesNum", UintegerValue (10000));
+		lteHelper->SetFadingModelAttribute ("TraceFilename", StringValue ("src/lte/model/fading-traces/Rayleigh_channel_60.fad"));
+		lteHelper->SetFadingModelAttribute ("TraceLength", TimeValue (Seconds (60.0)));
+		lteHelper->SetFadingModelAttribute ("SamplesNum", UintegerValue (60000));
 		lteHelper->SetFadingModelAttribute ("WindowSize", TimeValue (Seconds (0.5)));
 		lteHelper->SetFadingModelAttribute ("RbNum", UintegerValue (25));
 	}
@@ -118,12 +116,14 @@ int main (int argc, char *argv[])
 
 		double SNR_i=min_SNR+i*delta;
 
-		std::cout<<SNR_i<<std::endl;
+		//std::cout<<SNR_i<<std::endl;
 		double SNR_i_dB=10*log10(SNR_i);
 
 		double K=26.33;	//This is the constant I need to compute the SNR for user
 
 		double d=1000*pow(10,((K-SNR_i_dB)/20));
+
+		//std::cout<<d<<" m"<<std::endl;
 
 		positionAlloc->Add (Vector(d, 0, 0));
 	}
@@ -141,9 +141,9 @@ int main (int argc, char *argv[])
 	mobility2.SetPositionAllocator(positionAlloc2);
 	mobility2.Install(enbNodes);
 
-	//lteHelper->SetSchedulerType ("ns3::TdBetFfMacScheduler");
+
 	lteHelper->SetSchedulerType ("ns3::TdMtFfMacScheduler");
-	//lteHelper->SetSchedulerAttribute("HarqEnabled",BooleanValue(false));
+	lteHelper->SetSchedulerAttribute("HarqEnabled",BooleanValue(false));
 
 	enbDevs = lteHelper->InstallEnbDevice (enbNodes);
 	ueDevs = lteHelper->InstallUeDevice (ueNodes);
